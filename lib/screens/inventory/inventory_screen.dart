@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../models/product_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../services/image_storage_service.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/product_image.dart';
 import 'product_detail_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
@@ -195,6 +194,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: _abrirFormulario,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Agregar'),
@@ -240,6 +240,7 @@ class _ProductFormState extends State<_ProductForm> {
   final _nombreController = TextEditingController();
   final _compraController = TextEditingController();
   final _ventaController = TextEditingController();
+  final _cantidadInicialController = TextEditingController();
 
   final ProductRepository _repository = ProductRepository();
   final ImageStorageService _imageService = ImageStorageService();
@@ -294,6 +295,13 @@ class _ProductFormState extends State<_ProductForm> {
     return null;
   }
 
+  String? _validarCantidad(String? value) {
+    final cantidad = int.tryParse((value ?? '').trim());
+    return cantidad == null || cantidad < 0
+        ? 'Ingresa una cantidad válida'
+        : null;
+  }
+
   Future<void> _guardarProducto() async {
     if (!_formKey.currentState!.validate()) return;
     if (_guardando) return;
@@ -322,6 +330,7 @@ class _ProductFormState extends State<_ProductForm> {
           _ventaController.text.trim().replaceAll(',', '.'),
         ),
         tarifaIva: _aplicaIva ? _tarifaIva : 0,
+        cantidadInicial: int.parse(_cantidadInicialController.text.trim()),
       );
 
       await _repository.create(producto);
@@ -352,6 +361,7 @@ class _ProductFormState extends State<_ProductForm> {
     _nombreController.dispose();
     _compraController.dispose();
     _ventaController.dispose();
+    _cantidadInicialController.dispose();
 
     super.dispose();
   }
@@ -403,11 +413,11 @@ class _ProductFormState extends State<_ProductForm> {
                           )
                         : ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Image.file(
-                              File(_imagenPath!),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.broken_image_outlined),
+                            child: ProductImage(
+                              imagePath: _imagenPath!,
+                              fallback: const Icon(
+                                Icons.broken_image_outlined,
+                              ),
                             ),
                           ),
                   ),
@@ -432,6 +442,20 @@ class _ProductFormState extends State<_ProductForm> {
                   }
                   return null;
                 },
+              ),
+
+              const SizedBox(height: 14),
+
+              TextFormField(
+                controller: _cantidadInicialController,
+                enabled: !_guardando,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Cantidad inicial',
+                  prefixIcon: Icon(Icons.inventory_2_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: _validarCantidad,
               ),
 
               const SizedBox(height: 14),
@@ -505,7 +529,7 @@ class _ProductFormState extends State<_ProductForm> {
                         const Divider(),
 
                         DropdownButtonFormField<double>(
-                          value: _tarifaIva,
+                          initialValue: _tarifaIva,
                           decoration: const InputDecoration(
                             labelText: 'Tarifa de IVA',
                             prefixIcon: Icon(Icons.percent_rounded),

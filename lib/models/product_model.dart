@@ -5,6 +5,7 @@ class ProductModel {
   double precioCompra;
   double precioVenta;
   double tarifaIva;
+  int cantidadInicial;
 
   ProductModel({
     this.productoId,
@@ -13,6 +14,7 @@ class ProductModel {
     required this.precioCompra,
     required this.precioVenta,
     this.tarifaIva = 0.0,
+    this.cantidadInicial = 0,
   });
 
   factory ProductModel.fromMap(Map<String, dynamic> data) {
@@ -26,6 +28,7 @@ class ProductModel {
       // Si el producto es antiguo o el IVA es NULL,
       // se utiliza temporalmente 0.
       tarifaIva: (data['tarifa_iva'] as num?)?.toDouble() ?? 0.0,
+      cantidadInicial: (data['cantidad_inicial'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -37,6 +40,7 @@ class ProductModel {
       'precio_compra': precioCompra,
       'precio_venta': precioVenta,
       'tarifa_iva': tarifaIva,
+      'cantidad_inicial': cantidadInicial,
     };
   }
 

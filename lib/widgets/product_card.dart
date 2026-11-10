@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../models/product_model.dart';
+import 'product_image.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductModel producto;
@@ -75,12 +74,9 @@ class ProductCard extends StatelessWidget {
       return _sinImagen(colors);
     }
 
-    return Image.file(
-      File(ruta),
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return _sinImagen(colors);
-      },
+    return ProductImage(
+      imagePath: ruta,
+      fallback: _sinImagen(colors),
     );
   }
 

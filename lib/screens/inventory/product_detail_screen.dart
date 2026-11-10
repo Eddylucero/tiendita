@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../models/product_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../services/image_storage_service.dart';
+import '../../widgets/product_image.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final ProductModel producto;
@@ -70,14 +69,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return _imagenPredeterminada(colors);
     }
 
-    return Image.file(
-      File(ruta),
+    return SizedBox(
       width: double.infinity,
       height: 250,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) {
-        return _imagenPredeterminada(colors);
-      },
+      child: ProductImage(
+        imagePath: ruta,
+        fallback: _imagenPredeterminada(colors),
+      ),
     );
   }
 
@@ -310,6 +308,7 @@ class _EditProductFormState extends State<_EditProductForm> {
   late TextEditingController _nombreController;
   late TextEditingController _compraController;
   late TextEditingController _ventaController;
+  late TextEditingController _cantidadInicialController;
 
   String? _imagenPath;
   String? _imagenOriginal;
@@ -326,6 +325,9 @@ class _EditProductFormState extends State<_EditProductForm> {
     super.initState();
 
     _nombreController = TextEditingController(text: widget.producto.nombre);
+    _cantidadInicialController = TextEditingController(
+      text: '${widget.producto.cantidadInicial}',
+    );
 
     _compraController = TextEditingController(
       text: widget.producto.precioCompra.toStringAsFixed(2),
@@ -387,6 +389,13 @@ class _EditProductFormState extends State<_EditProductForm> {
     return null;
   }
 
+  String? _validarCantidad(String? valor) {
+    final cantidad = int.tryParse((valor ?? '').trim());
+    return cantidad == null || cantidad < 0
+        ? 'Ingresa una cantidad válida'
+        : null;
+  }
+
   Future<void> _guardarCambios() async {
     if (!_formKey.currentState!.validate()) return;
     if (_guardando) return;
@@ -419,6 +428,7 @@ class _EditProductFormState extends State<_EditProductForm> {
           _ventaController.text.trim().replaceAll(',', '.'),
         ),
         tarifaIva: _aplicaIva ? _tarifaIva : 0,
+        cantidadInicial: int.parse(_cantidadInicialController.text.trim()),
       );
 
       await _repository.edit(actualizado);
@@ -459,6 +469,7 @@ class _EditProductFormState extends State<_EditProductForm> {
     _nombreController.dispose();
     _compraController.dispose();
     _ventaController.dispose();
+    _cantidadInicialController.dispose();
 
     super.dispose();
   }
@@ -487,6 +498,20 @@ class _EditProductFormState extends State<_EditProductForm> {
 
               const SizedBox(height: 20),
 
+              TextFormField(
+                controller: _cantidadInicialController,
+                enabled: !_guardando,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Cantidad inicial',
+                  prefixIcon: Icon(Icons.inventory_2_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: _validarCantidad,
+              ),
+
+              const SizedBox(height: 14),
+
               // FOTOGRAFÍA
               Center(
                 child: InkWell(
@@ -503,11 +528,11 @@ class _EditProductFormState extends State<_EditProductForm> {
                         ? const Icon(Icons.add_a_photo_outlined, size: 48)
                         : ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Image.file(
-                              File(_imagenPath!),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.broken_image_outlined),
+                              child: ProductImage(
+                                imagePath: _imagenPath!,
+                                fallback: const Icon(
+                                  Icons.broken_image_outlined,
+                                ),
                             ),
                           ),
                   ),
@@ -605,7 +630,7 @@ class _EditProductFormState extends State<_EditProductForm> {
                         const Divider(),
 
                         DropdownButtonFormField<double>(
-                          value: _tarifaIva,
+                          initialValue: _tarifaIva,
                           decoration: const InputDecoration(
                             labelText: 'Tarifa de IVA',
                             prefixIcon: Icon(Icons.percent_rounded),

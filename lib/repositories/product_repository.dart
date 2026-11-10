@@ -13,7 +13,23 @@ class ProductRepository {
     final values = data.toMap();
     values.remove('producto_id');
 
-    return await db.insert(tableName, values);
+    return db.transaction((txn) async {
+      final id = await txn.insert(tableName, values);
+      final periods = await txn.query('periodos',
+          columns: ['periodo_id'], orderBy: 'anio DESC, mes DESC', limit: 1);
+      if (periods.isNotEmpty) {
+        await txn.insert('inventario_mensual', {
+          'producto_id': id,
+          'periodo_id': periods.first['periodo_id'],
+          'cantidad_inicial': data.cantidadInicial,
+          'cantidad_comprada': 0,
+          'cantidad_restante': data.cantidadInicial,
+          'precio_compra': data.precioCompra,
+          'precio_venta': data.precioVenta,
+        });
+      }
+      return id;
+    });
   }
 
   // EDITAR PRODUCTO
@@ -27,12 +43,50 @@ class ProductRepository {
     final values = data.toMap();
     values.remove('producto_id');
 
-    return await db.update(
-      tableName,
-      values,
-      where: 'producto_id = ?',
-      whereArgs: [data.productoId],
-    );
+    return db.transaction((txn) async {
+      final updated = await txn.update(
+        tableName,
+        values,
+        where: 'producto_id = ?',
+        whereArgs: [data.productoId],
+      );
+      if (updated == 0) return 0;
+
+      final periods = await txn.query('periodos',
+          columns: ['periodo_id'], orderBy: 'anio DESC, mes DESC', limit: 1);
+      if (periods.isNotEmpty) {
+        final periodId = periods.first['periodo_id'] as int;
+        final inventory = await txn.query('inventario_mensual',
+          where: 'producto_id = ? AND periodo_id = ?',
+          whereArgs: [data.productoId, periodId], limit: 1);
+        if (inventory.isEmpty) {
+          await txn.insert('inventario_mensual', {
+            'producto_id': data.productoId,
+            'periodo_id': periodId,
+            'cantidad_inicial': data.cantidadInicial,
+            'cantidad_comprada': 0,
+            'cantidad_restante': data.cantidadInicial,
+            'precio_compra': data.precioCompra,
+            'precio_venta': data.precioVenta,
+          });
+        } else {
+          final row = inventory.first;
+          final oldInitial = (row['cantidad_inicial'] as num).toInt();
+          if (oldInitial != data.cantidadInicial) {
+            final newRemaining = (row['cantidad_restante'] as num).toInt()
+                + data.cantidadInicial - oldInitial;
+            if (newRemaining < 0) {
+              throw StateError('La cantidad inicial no puede ser menor que lo ya vendido.');
+            }
+            await txn.update('inventario_mensual', {
+              'cantidad_inicial': data.cantidadInicial,
+              'cantidad_restante': newRemaining,
+            }, where: 'inventario_id = ?', whereArgs: [row['inventario_id']]);
+          }
+        }
+      }
+      return updated;
+    });
   }
 
   // ELIMINAR PRODUCTO

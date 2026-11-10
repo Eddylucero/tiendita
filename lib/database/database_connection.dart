@@ -21,7 +21,7 @@ class DatabaseConnection {
 
     return openDatabase(
       rutaFinal,
-      version: 3,
+      version: 5,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -34,7 +34,8 @@ class DatabaseConnection {
             imagen_path TEXT,
             precio_compra REAL NOT NULL DEFAULT 0,
             precio_venta REAL NOT NULL DEFAULT 0,
-            tarifa_iva REAL NOT NULL DEFAULT 0
+            tarifa_iva REAL NOT NULL DEFAULT 0,
+            cantidad_inicial INTEGER NOT NULL DEFAULT 0
           )
         ''');
 
@@ -44,6 +45,7 @@ class DatabaseConnection {
             periodo_id INTEGER PRIMARY KEY AUTOINCREMENT,
             mes INTEGER NOT NULL CHECK(mes BETWEEN 1 AND 12),
             anio INTEGER NOT NULL,
+            encargado TEXT NOT NULL,
             estado TEXT NOT NULL DEFAULT 'abierto',
             UNIQUE(mes, anio)
           )
@@ -96,6 +98,21 @@ class DatabaseConnection {
           await db.execute('''
             ALTER TABLE productos
             ADD COLUMN tarifa_iva REAL NOT NULL DEFAULT 0
+          ''');
+        }
+
+        if (oldVersion < 4) {
+          // Los períodos existentes se conservan. El valor por defecto permite
+          // agregar la columna sin reconstruir ni borrar la base de datos.
+          await db.execute('''
+            ALTER TABLE periodos
+            ADD COLUMN encargado TEXT NOT NULL DEFAULT 'Sin asignar'
+          ''');
+        }
+        if (oldVersion < 5) {
+          await db.execute('''
+            ALTER TABLE productos
+            ADD COLUMN cantidad_inicial INTEGER NOT NULL DEFAULT 0
           ''');
         }
       },

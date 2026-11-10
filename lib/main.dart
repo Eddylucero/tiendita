@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/inventory/inventory_screen.dart';
+import 'screens/accounting/accounting_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -54,17 +55,16 @@ class _MainScreenState extends State<MainScreen> {
     _selectedIndex = widget.initialIndex;
   }
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    _PendingScreen(title: 'Contabilidad'),
-    InventoryScreen(),
-    _PendingScreen(title: 'Configuración'),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      const HomeScreen(),
+      AccountingScreen(active: _selectedIndex == 1),
+      const InventoryScreen(),
+      const _PendingScreen(title: 'Configuración'),
+    ];
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _screens),
+      body: IndexedStack(index: _selectedIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
