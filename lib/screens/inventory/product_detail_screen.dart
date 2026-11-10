@@ -18,11 +18,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final ProductRepository _repository = ProductRepository();
 
   late ProductModel _producto;
+  late Future<int> _cantidadDisponibleFuture;
 
   @override
   void initState() {
     super.initState();
     _producto = widget.producto;
+    _cantidadDisponibleFuture = _repository.getAvailableQuantity(_producto);
   }
 
   Future<void> _editarProducto() async {
@@ -44,8 +46,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (!mounted) return;
 
       if (productoActualizado != null) {
+        final nuevaCantidadFuture = _repository.getAvailableQuantity(
+          productoActualizado,
+        );
         setState(() {
           _producto = productoActualizado;
+          _cantidadDisponibleFuture = nuevaCantidadFuture;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -197,37 +203,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _DetailCard(
-                  titulo: 'Cantidad disponible',
-                  valor: 'Pendiente',
-                  icono: Icons.inventory_2_outlined,
-                  color: colors.secondary,
+                child: FutureBuilder<int>(
+                  future: _cantidadDisponibleFuture,
+                  builder: (context, snapshot) => _DetailCard(
+                    titulo: 'Cantidad disponible',
+                    valor: snapshot.hasError
+                        ? 'Error'
+                        : snapshot.hasData ? '${snapshot.data}' : '...',
+                    icono: Icons.inventory_2_outlined,
+                    color: colors.secondary,
+                  ),
                 ),
               ),
             ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // INFORMACIÓN DEL INVENTARIO MENSUAL
-          Card(
-            elevation: 0,
-            color: colors.surfaceContainerLow,
-            child: const Padding(
-              padding: EdgeInsets.all(18),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline_rounded),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Las cantidades del producto se mostrarán '
-                      'cuando implementemos el inventario mensual.',
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
 
           const SizedBox(height: 24),
@@ -495,21 +483,6 @@ class _EditProductFormState extends State<_EditProductForm> {
                 'Editar producto',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: _cantidadInicialController,
-                enabled: !_guardando,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Cantidad inicial',
-                  prefixIcon: Icon(Icons.inventory_2_outlined),
-                  border: OutlineInputBorder(),
-                ),
-                validator: _validarCantidad,
-              ),
-
               const SizedBox(height: 14),
 
               // FOTOGRAFÍA
@@ -528,11 +501,9 @@ class _EditProductFormState extends State<_EditProductForm> {
                         ? const Icon(Icons.add_a_photo_outlined, size: 48)
                         : ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                              child: ProductImage(
-                                imagePath: _imagenPath!,
-                                fallback: const Icon(
-                                  Icons.broken_image_outlined,
-                                ),
+                            child: ProductImage(
+                              imagePath: _imagenPath!,
+                              fallback: const Icon(Icons.broken_image_outlined),
                             ),
                           ),
                   ),
@@ -557,6 +528,20 @@ class _EditProductFormState extends State<_EditProductForm> {
                   }
                   return null;
                 },
+              ),
+
+              const SizedBox(height: 14),
+
+              TextFormField(
+                controller: _cantidadInicialController,
+                enabled: !_guardando,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Cantidad inicial',
+                  prefixIcon: Icon(Icons.inventory_2_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: _validarCantidad,
               ),
 
               const SizedBox(height: 14),

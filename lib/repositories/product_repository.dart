@@ -128,6 +128,23 @@ class ProductRepository {
     return ProductModel.fromMap(response.first);
   }
 
+  Future<int> getAvailableQuantity(ProductModel product) async {
+    if (product.productoId == null) return product.cantidadInicial;
+    final db = await database.db;
+    final rows = await db.rawQuery('''
+      SELECT inventario_mensual.cantidad_restante
+      FROM inventario_mensual
+      INNER JOIN periodos
+        ON periodos.periodo_id = inventario_mensual.periodo_id
+      WHERE inventario_mensual.producto_id = ?
+      ORDER BY periodos.anio DESC, periodos.mes DESC
+      LIMIT 1
+    ''', [product.productoId]);
+    return rows.isEmpty
+        ? product.cantidadInicial
+        : (rows.first['cantidad_restante'] as num).toInt();
+  }
+
   // BUSCAR PRODUCTOS
   Future<List<ProductModel>> search(String nombre) async {
     final db = await database.db;
