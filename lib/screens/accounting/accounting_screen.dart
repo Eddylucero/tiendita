@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../models/accounting_period_model.dart';
 import '../../repositories/accounting_repository.dart';
 import 'accounting_detail_screen.dart';
+import '../../widgets/bento.dart';
 
 class AccountingScreen extends StatefulWidget {
   final bool active;
@@ -66,11 +67,13 @@ class _AccountingScreenState extends State<AccountingScreen> {
     AccountingPeriodModel period;
     try {
       final existing = await _repository.getPeriod(input.mes, input.anio);
-      period = existing ?? await _repository.createPeriod(
-        mes: input.mes,
-        anio: input.anio,
-        encargado: input.encargado,
-      );
+      period =
+          existing ??
+          await _repository.createPeriod(
+            mes: input.mes,
+            anio: input.anio,
+            encargado: input.encargado,
+          );
     } on DatabaseException catch (e) {
       if (e.isUniqueConstraintError()) {
         final existing = await _repository.getPeriod(input.mes, input.anio);
@@ -100,7 +103,9 @@ class _AccountingScreenState extends State<AccountingScreen> {
       await _refresh();
     } catch (e) {
       if (mounted) {
-        _message('El período está guardado, pero no se pudo actualizar la lista: $e');
+        _message(
+          'El período está guardado, pero no se pudo actualizar la lista: $e',
+        );
       }
     }
     if (!mounted) return;
@@ -124,77 +129,76 @@ class _AccountingScreenState extends State<AccountingScreen> {
           ],
         ),
       ),
-      body: FutureBuilder<List<AccountingPeriodModel>>(
-        future: _periods,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Error al cargar períodos'),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: _refresh,
-                    child: const Text('Reintentar'),
-                  ),
-                ],
-              ),
-            );
-          }
-          final periods = snapshot.data ?? [];
-          if (periods.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.calendar_month_outlined,
-                    size: 70,
-                    color: colors.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No hay períodos registrados',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Agrega tu primer período.'),
-                ],
-              ),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 600 ? 4 : 2;
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 90),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    mainAxisExtent: 180,
-                  ),
-                  itemCount: periods.length,
-                  itemBuilder: (context, index) {
-                    final period = periods[index];
-                    return Card(
-                      clipBehavior: Clip.antiAlias,
-                      elevation: 0,
-                      color: colors.surfaceContainerLow,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        side: BorderSide(color: colors.outlineVariant),
-                      ),
-                      child: InkWell(
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: BentoHeader(
+              eyebrow: 'Períodos contables',
+              title: 'Cada mes, claro.',
+              subtitle:
+                  'Revisa productos y registra los movimientos del período.',
+              icon: Icons.calendar_month_rounded,
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<AccountingPeriodModel>>(
+              future: _periods,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Error al cargar períodos'),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: _refresh,
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final periods = snapshot.data ?? [];
+                if (periods.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_month_outlined,
+                          size: 70,
+                          color: colors.outline,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No hay períodos registrados',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('Agrega tu primer período.'),
+                      ],
+                    ),
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: _refresh,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 700
+                          ? 4
+                          : constraints.maxWidth >= 340
+                          ? 2
+                          : 1;
+                      Widget tile(AccountingPeriodModel period, {bool featured = false}) => BentoTile(
+                        featured: featured,
                         onTap: () => _open(period),
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(2),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -223,14 +227,45 @@ class _AccountingScreenState extends State<AccountingScreen> {
                             ],
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                      return CustomScrollView(
+                        slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                            sliver: SliverToBoxAdapter(
+                              child: SizedBox(
+                                height: 150,
+                                child: tile(periods.first, featured: true),
+                              ),
+                            ),
+                          ),
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 90),
+                            sliver: SliverGrid(
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: columns,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    mainAxisExtent: MediaQuery.textScalerOf(
+                                      context,
+                                    ).scale(180).clamp(180, 280).toDouble(),
+                                  ),
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) => tile(periods[index + 1]),
+                                childCount: periods.length - 1,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null,

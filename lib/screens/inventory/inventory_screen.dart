@@ -5,6 +5,7 @@ import '../../repositories/product_repository.dart';
 import '../../services/image_storage_service.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/bento.dart';
 import 'product_detail_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
@@ -72,6 +73,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ),
       body: Column(
         children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: BentoHeader(
+              eyebrow: 'Inventario',
+              title: 'Todo a la vista.',
+              subtitle: 'Tus productos, precios y existencias en orden.',
+              icon: Icons.inventory_2_rounded,
+            ),
+          ),
           // BUSCADOR
           Padding(
             padding: const EdgeInsets.all(16),
@@ -153,37 +163,38 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   onRefresh: _refrescar,
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final columnas = constraints.maxWidth >= 600 ? 4 : 2;
+                      final columnas = constraints.maxWidth >= 700
+                          ? 4
+                          : constraints.maxWidth >= 340
+                          ? 2
+                          : 1;
+                      Widget tile(ProductModel producto) => ProductCard(
+                        producto: producto,
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProductDetailScreen(producto: producto),
+                            ),
+                          );
 
+                          if (mounted) {
+                            await _refrescar();
+                          }
+                        },
+                      );
                       return GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 90),
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: columnas,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          mainAxisExtent: 230,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          mainAxisExtent: MediaQuery.textScalerOf(context)
+                              .scale(230).clamp(230, 320).toDouble(),
                         ),
                         itemCount: productos.length,
-                        itemBuilder: (context, index) {
-                          final producto = productos[index];
-
-                          return ProductCard(
-                            producto: producto,
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ProductDetailScreen(producto: producto),
-                                ),
-                              );
-
-                              if (mounted) {
-                                await _refrescar();
-                              }
-                            },
-                          );
-                        },
+                        itemBuilder: (context, index) => tile(productos[index]),
                       );
                     },
                   ),
@@ -415,9 +426,7 @@ class _ProductFormState extends State<_ProductForm> {
                             borderRadius: BorderRadius.circular(16),
                             child: ProductImage(
                               imagePath: _imagenPath!,
-                              fallback: const Icon(
-                                Icons.broken_image_outlined,
-                              ),
+                              fallback: const Icon(Icons.broken_image_outlined),
                             ),
                           ),
                   ),
@@ -495,9 +504,7 @@ class _ProductFormState extends State<_ProductForm> {
               const SizedBox(height: 18),
 
               // CONFIGURACIÓN DE IVA
-              Card(
-                elevation: 0,
-                color: colors.surfaceContainerLow,
+              BentoTile(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,

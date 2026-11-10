@@ -4,6 +4,7 @@ import '../../models/product_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../services/image_storage_service.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/bento.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final ProductModel producto;
@@ -118,9 +119,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           // FOTOGRAFÍA
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: _mostrarImagen(),
+          BentoTile(
+            padding: EdgeInsets.zero,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: _mostrarImagen(),
+            ),
           ),
 
           const SizedBox(height: 24),
@@ -143,9 +147,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const SizedBox(height: 20),
 
           // ESTADO DEL IVA
-          Card(
-            elevation: 0,
-            color: colors.surfaceContainerLow,
+          BentoTile(
+            padding: EdgeInsets.zero,
             child: ListTile(
               leading: Icon(Icons.receipt_long_outlined, color: colors.primary),
               title: const Text('Impuesto al Valor Agregado'),
@@ -167,19 +170,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const SizedBox(height: 20),
 
           // PRECIOS
-          Row(
-            children: [
-              Expanded(
-                child: _DetailCard(
+          BentoGrid(
+            items: [
+              BentoItem(
+                _DetailCard(
                   titulo: 'Precio de compra',
                   valor: '\$${_producto.precioCompra.toStringAsFixed(2)}',
                   icono: Icons.shopping_cart_outlined,
                   color: colors.primary,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _DetailCard(
+              BentoItem(
+                _DetailCard(
                   titulo: 'Precio de venta',
                   valor: '\$${_producto.precioVenta.toStringAsFixed(2)}',
                   icono: Icons.sell_outlined,
@@ -191,25 +193,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
           const SizedBox(height: 12),
 
-          Row(
-            children: [
-              Expanded(
-                child: _DetailCard(
+          BentoGrid(
+            items: [
+              BentoItem(
+                _DetailCard(
                   titulo: 'Ganancia unitaria',
                   valor: '\$${_producto.gananciaUnitaria.toStringAsFixed(2)}',
                   icono: Icons.trending_up_rounded,
                   color: colors.primary,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FutureBuilder<int>(
+              BentoItem(
+                FutureBuilder<int>(
                   future: _cantidadDisponibleFuture,
                   builder: (context, snapshot) => _DetailCard(
                     titulo: 'Cantidad disponible',
                     valor: snapshot.hasError
                         ? 'Error'
-                        : snapshot.hasData ? '${snapshot.data}' : '...',
+                        : snapshot.hasData
+                        ? '${snapshot.data}'
+                        : '...',
                     icono: Icons.inventory_2_outlined,
                     color: colors.secondary,
                   ),
@@ -252,9 +255,7 @@ class _DetailCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerLow,
+    return BentoTile(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -581,9 +582,7 @@ class _EditProductFormState extends State<_EditProductForm> {
               const SizedBox(height: 18),
 
               // CONFIGURACIÓN DE IVA
-              Card(
-                elevation: 0,
-                color: colors.surfaceContainerLow,
+              BentoTile(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,

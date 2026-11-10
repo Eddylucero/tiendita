@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/inventory/inventory_screen.dart';
 import 'screens/accounting/accounting_screen.dart';
+import 'screens/settings/settings_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,16 +17,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Contabilidad Tienda',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.teal,
-        scaffoldBackgroundColor: const Color(0xFFF7F9FA),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorSchemeSeed: Colors.teal,
-      ),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,
       initialRoute: '/',
       routes: {
@@ -58,10 +52,10 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      const HomeScreen(),
+      HomeScreen(active: _selectedIndex == 0),
       AccountingScreen(active: _selectedIndex == 1),
       const InventoryScreen(),
-      const _PendingScreen(title: 'Configuración'),
+      const SettingsScreen(),
     ];
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: screens),
@@ -95,20 +89,6 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _PendingScreen extends StatelessWidget {
-  final String title;
-
-  const _PendingScreen({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text('Vista de $title pendiente')),
     );
   }
 }

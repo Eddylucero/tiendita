@@ -68,7 +68,8 @@ class AccountingRepository {
 
       for (final product in products) {
         final productId = product['producto_id'] as int;
-        var initialQuantity = (product['cantidad_inicial'] as num?)?.toInt() ?? 0;
+        var initialQuantity =
+            (product['cantidad_inicial'] as num?)?.toInt() ?? 0;
 
         if (previousPeriodId != null) {
           final previousInventory = await txn.query(
@@ -118,6 +119,38 @@ class AccountingRepository {
       [periodId],
     );
     return rows.map(MonthlyInventoryModel.fromMap).toList();
+  }
+
+  Future<({double ganancia, double dineroEnProducto})> getLatestTotals() async {
+    final periods = await getPeriods();
+    if (periods.isEmpty) return (ganancia: 0.0, dineroEnProducto: 0.0);
+    final inventory = await getInventory(periods.first.periodoId!);
+    double gain = 0;
+    double invested = 0;
+    for (final product in inventory) {
+      gain += product.gananciaTotal;
+      invested += product.dineroInvertidoRestante;
+    }
+    return (ganancia: gain, dineroEnProducto: invested);
+  }
+
+  Future<MonthlyInventoryModel?> getLatestAccountingProduct() async {
+    final periods = await getPeriods();
+    if (periods.isEmpty) return null;
+    final db = await database.db;
+    final rows = await db.rawQuery(
+      '''
+      SELECT inventario_mensual.*, productos.nombre, productos.imagen_path
+      FROM inventario_mensual
+      INNER JOIN productos
+        ON productos.producto_id = inventario_mensual.producto_id
+      WHERE inventario_mensual.periodo_id = ?
+      ORDER BY inventario_mensual.inventario_id DESC
+      LIMIT 1
+    ''',
+      [periods.first.periodoId],
+    );
+    return rows.isEmpty ? null : MonthlyInventoryModel.fromMap(rows.first);
   }
 
   Future<void> updateInventory(MonthlyInventoryModel inventory) async {

@@ -2,27 +2,24 @@ import 'package:flutter/material.dart';
 
 import '../models/product_model.dart';
 import 'product_image.dart';
+import 'bento.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductModel producto;
   final VoidCallback onTap;
 
-  const ProductCard({super.key, required this.producto, required this.onTap});
+  const ProductCard({super.key, required this.producto,
+    required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      color: colors.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: colors.outlineVariant),
-      ),
-      child: InkWell(
-        onTap: onTap,
+    return BentoTile(
+      padding: EdgeInsets.zero,
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -74,10 +71,7 @@ class ProductCard extends StatelessWidget {
       return _sinImagen(colors);
     }
 
-    return ProductImage(
-      imagePath: ruta,
-      fallback: _sinImagen(colors),
-    );
+    return ProductImage(imagePath: ruta, fallback: _sinImagen(colors));
   }
 
   Widget _sinImagen(ColorScheme colors) {
